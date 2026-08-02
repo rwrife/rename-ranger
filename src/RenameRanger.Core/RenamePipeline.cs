@@ -36,10 +36,25 @@ public sealed class RenamePipeline
                 item.Metadata ?? EmptyMetadata);
 
             var currentName = context.CurrentName;
+            var errors = new List<string>();
             foreach (var rule in _rules)
             {
                 ArgumentNullException.ThrowIfNull(rule);
-                currentName = rule.Apply(context.WithCurrentName(currentName));
+
+                if (rule is IRuleIssueSource issueSource && !string.IsNullOrWhiteSpace(issueSource.Issue))
+                {
+                    errors.Add($"{rule.GetType().Name}: {issueSource.Issue}");
+                    continue;
+                }
+
+                try
+                {
+                    currentName = rule.Apply(context.WithCurrentName(currentName));
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"{rule.GetType().Name}: {ex.Message}");
+                }
             }
 
             proposals.Add(
@@ -48,7 +63,8 @@ public sealed class RenamePipeline
                     item.OriginalName,
                     item.OriginalName + extension,
                     currentName,
-                    currentName + extension));
+                    currentName + extension,
+                    errors));
 
             index++;
         }
