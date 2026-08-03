@@ -159,4 +159,82 @@ public class RenamePipelineTests
 
         Assert.Equal("Report.txt", result.Single());
     }
+
+    [Fact]
+    public void NumberingRule_SupportsStartStepPaddingAndAffixes()
+    {
+        var pipeline = new RenamePipeline(
+            new IRenameRule[]
+            {
+                new NumberingRule(start: 5, step: 2, padWidth: 3, prefix: "_", suffix: "-x", placement: NumberingPlacement.Suffix),
+            });
+
+        var result = pipeline.GetProposedFileNames(
+            new[]
+            {
+                new RenameItem("photo", ".jpg"),
+                new RenameItem("photo", ".jpg"),
+                new RenameItem("photo", ".jpg"),
+            });
+
+        Assert.Equal("photo_005-x.jpg", result[0]);
+        Assert.Equal("photo_007-x.jpg", result[1]);
+        Assert.Equal("photo_009-x.jpg", result[2]);
+    }
+
+    [Fact]
+    public void MetadataTokenRule_ExpandsCustomDateFormatsAndStandardTokens()
+    {
+        var pipeline = new RenamePipeline(
+            new IRenameRule[]
+            {
+                new MetadataTokenRule("{exif:date:yyyy-MM-dd}_{name}_{size}_{ext}"),
+            });
+
+        var metadata = new Dictionary<string, string?>
+        {
+            ["exif:date"] = "2024-10-31T16:20:00Z",
+            ["size"] = "4096",
+        };
+
+        var result = pipeline.GetProposedFileNames(
+            new[] { new RenameItem("IMG_1234", ".JPG", metadata) });
+
+        Assert.Equal("2024-10-31_IMG_1234_4096_JPG.JPG", result.Single());
+    }
+
+    [Fact]
+    public void MetadataTokenRule_FallsBackToFileModifiedDate_WhenExifMissing()
+    {
+        var pipeline = new RenamePipeline(
+            new IRenameRule[]
+            {
+                new MetadataTokenRule("{exif:date:yyyyMMdd}_{name}"),
+            });
+
+        var metadata = new Dictionary<string, string?>
+        {
+            ["file:modified"] = "2022-01-02T03:04:05Z",
+        };
+
+        var result = pipeline.GetProposedFileNames(
+            new[] { new RenameItem("scan", ".pdf", metadata) });
+
+        Assert.Equal("20220102_scan.pdf", result.Single());
+    }
+
+    [Fact]
+    public void TrimCleanRule_CollapsesWhitespace_StripsBracketedTags_AndNormalizesSeparators()
+    {
+        var pipeline = new RenamePipeline(
+            new IRenameRule[]
+            {
+                new TrimCleanRule(),
+            });
+
+        var result = pipeline.GetProposedFileNames(
+            new[] { new RenameItem("  My__File   [draft] (v2) --- copy  ", ".txt") });
+
+        Assert.Equal("My File copy.txt", result.Single());
+    }
 }
