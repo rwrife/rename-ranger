@@ -237,4 +237,71 @@ public class RenamePipelineTests
 
         Assert.Equal("My File copy.txt", result.Single());
     }
+
+    [Fact]
+    public void Preview_DetectsDuplicateTargets_AndReservedWindowsNames()
+    {
+        var pipeline = new RenamePipeline(
+            new IRenameRule[]
+            {
+                new ConstantNameRule("CON"),
+            });
+
+        var proposals = pipeline.Preview(
+            new[]
+            {
+                new RenameItem("A", ".txt"),
+                new RenameItem("B", ".txt"),
+            });
+
+        Assert.All(proposals, proposal => Assert.True(proposal.HasErrors));
+        Assert.All(
+            proposals,
+            proposal => Assert.Contains(
+                proposal.Errors,
+                error => error.Contains("Duplicate target filename", StringComparison.OrdinalIgnoreCase)));
+        Assert.All(
+            proposals,
+            proposal => Assert.Contains(
+                proposal.Errors,
+                error => error.Contains("reserved filename", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Fact]
+    public void Preview_DetectsInvalidWindowsCharacters_AndPathLengthOverflow()
+    {
+        var veryLongDirectory = Path.Combine(Path.GetTempPath(), new string('x', 245));
+
+        var pipeline = new RenamePipeline(
+            new IRenameRule[]
+            {
+                new ConstantNameRule("bad<name"),
+            });
+
+        var proposal = pipeline.Preview(
+            new[]
+            {
+                new RenameItem("sample", ".txt", DirectoryPath: veryLongDirectory),
+            }).Single();
+
+        Assert.True(proposal.HasErrors);
+        Assert.Contains(
+            proposal.Errors,
+            error => error.Contains("invalid character", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(
+            proposal.Errors,
+            error => error.Contains("MAX_PATH", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private sealed class ConstantNameRule : IRenameRule
+    {
+        private readonly string _value;
+
+        public ConstantNameRule(string value)
+        {
+            _value = value;
+        }
+
+        public string Apply(RenameContext ctx) => _value;
+    }
 }
