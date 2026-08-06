@@ -184,36 +184,22 @@
                 <DataGrid Margin="8"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
-                          IsReadOnly="True"
+                          IsReadOnly="False"
                           ItemsSource="{Binding Files}"
                           DragOver="OnDragOver"
                           Drop="OnDrop">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Binding="{Binding OriginalFileName}" Header="Original Name" Width="2*" />
+                        <DataGridTextColumn Binding="{Binding OriginalFileName}"
+                                            Header="Original Name"
+                                            Width="2*"
+                                            IsReadOnly="True" />
 
-                        <DataGridTemplateColumn Header="New Name (Preview)" Width="2*">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding ProposedFileName}"
-                                               ToolTip="{Binding ErrorSummary}">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="Black" />
-                                                <Setter Property="FontWeight" Value="Normal" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasIssues}" Value="True">
-                                                        <Setter Property="Foreground" Value="#CC2200" />
-                                                        <Setter Property="FontWeight" Value="SemiBold" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Binding="{Binding ProposedFileName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                            Header="New Name (Preview, editable)"
+                                            Width="2*"
+                                            IsReadOnly="False" />
 
-                        <DataGridTemplateColumn Header="⚠" Width="52">
+                        <DataGridTemplateColumn Header="⚠" Width="52" IsReadOnly="True">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock HorizontalAlignment="Center"
@@ -236,7 +222,18 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn Header="" Width="72">
+                        <DataGridTemplateColumn Header="AI" Width="78" IsReadOnly="True">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Padding="8,2"
+                                            Command="{Binding DataContext.SuggestNameCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
+                                            Content="Suggest" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="" Width="72" IsReadOnly="True">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Button Padding="8,2"
@@ -250,48 +247,78 @@
                 </DataGrid>
             </GroupBox>
 
-            <GroupBox Grid.Column="1" Header="Rule Stack">
-                <ListBox Margin="8"
-                         BorderThickness="0"
-                         ItemsSource="{Binding Rules}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Border Margin="0,0,0,10"
-                                    Padding="10"
-                                    BorderBrush="#22000000"
-                                    BorderThickness="1"
-                                    CornerRadius="6">
-                                <StackPanel>
-                                    <DockPanel>
-                                        <TextBlock DockPanel.Dock="Left"
-                                                   VerticalAlignment="Center"
-                                                   FontWeight="SemiBold"
-                                                   Text="{Binding DisplayName}" />
-                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                            <Button Margin="0,0,6,0"
-                                                    Padding="6,2"
-                                                    Command="{Binding DataContext.MoveRuleUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding}"
-                                                    Content="↑" />
-                                            <Button Margin="0,0,6,0"
-                                                    Padding="6,2"
-                                                    Command="{Binding DataContext.MoveRuleDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding}"
-                                                    Content="↓" />
-                                            <Button Padding="8,2"
-                                                    Command="{Binding DataContext.RemoveRuleCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding}"
-                                                    Content="Remove" />
-                                        </StackPanel>
-                                    </DockPanel>
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="2*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-                                    <ContentControl Content="{Binding}" />
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </GroupBox>
+                <GroupBox Grid.Row="0" Header="Rule Stack">
+                    <ListBox Margin="8"
+                             BorderThickness="0"
+                             ItemsSource="{Binding Rules}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,0,10"
+                                        Padding="10"
+                                        BorderBrush="#22000000"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Left"
+                                                       VerticalAlignment="Center"
+                                                       FontWeight="SemiBold"
+                                                       Text="{Binding DisplayName}" />
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                <Button Margin="0,0,6,0"
+                                                        Padding="6,2"
+                                                        Command="{Binding DataContext.MoveRuleUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="↑" />
+                                                <Button Margin="0,0,6,0"
+                                                        Padding="6,2"
+                                                        Command="{Binding DataContext.MoveRuleDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="↓" />
+                                                <Button Padding="8,2"
+                                                        Command="{Binding DataContext.RemoveRuleCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Remove" />
+                                            </StackPanel>
+                                        </DockPanel>
+
+                                        <ContentControl Content="{Binding}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </GroupBox>
+
+                <GroupBox Grid.Row="1" Header="Settings · Local AI (optional)" Margin="0,12,0,0">
+                    <StackPanel Margin="10">
+                        <CheckBox Content="Enable local-AI suggestions"
+                                  IsChecked="{Binding IsAiEnabled}" />
+
+                        <TextBlock Margin="0,10,0,0" Text="Endpoint URL" />
+                        <TextBox Margin="0,4,0,0"
+                                 Text="{Binding AiEndpointUrl, UpdateSourceTrigger=LostFocus}"
+                                 ToolTip="Example: http://127.0.0.1:11434" />
+
+                        <TextBlock Margin="0,10,0,0" Text="Model name" />
+                        <TextBox Margin="0,4,0,0"
+                                 Text="{Binding AiModel, UpdateSourceTrigger=LostFocus}"
+                                 ToolTip="Examples: qwen2.5:1.5b, llama3.2:1b, MiniCPM-family" />
+
+                        <TextBlock Margin="0,10,0,0"
+                                   FontSize="11"
+                                   Foreground="#666"
+                                   TextWrapping="Wrap"
+                                   Text="Saved to %APPDATA%\rename-ranger\settings.json" />
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
         </Grid>
 
         <Border Grid.Row="2"

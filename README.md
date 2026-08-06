@@ -64,6 +64,7 @@ Click **Apply**. Done — reversible via **Undo**.
 When enabled in Settings, `rename-ranger` can call a **local** small model to propose descriptive names — e.g. reading a document's first lines or an image's caption to suggest `Invoice_AcmeCorp_2026-Q2` instead of `scan0042`.
 
 - Works with **Ollama** or any **llama.cpp** server exposing an OpenAI-compatible `/v1/chat/completions` endpoint.
+- Settings include a local-AI enable toggle, endpoint URL, and model name, persisted to `%APPDATA%\rename-ranger\settings.json`.
 - Recommended tiny models: **MiniCPM-family**, `qwen2.5:1.5b`, `llama3.2:1b`, or similar small instruct/vision models.
 - The AI endpoint is **probed for reachability**; if unavailable, the app silently falls back to rule-based naming.
 - **Off by default.** No cloud services, no telemetry, no network required for core features.
