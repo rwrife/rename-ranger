@@ -10,6 +10,7 @@ public sealed class FilePreviewItemViewModel : ObservableObject
     private string _proposedFileName;
     private bool _hasIssues;
     private string _errorSummary;
+    private bool _manualOverrideActive;
 
     public FilePreviewItemViewModel(string fullPath)
     {
@@ -33,10 +34,16 @@ public sealed class FilePreviewItemViewModel : ObservableObject
 
     public string? DirectoryPath { get; }
 
+    public bool ManualOverrideActive
+    {
+        get => _manualOverrideActive;
+        private set => SetProperty(ref _manualOverrideActive, value);
+    }
+
     public string ProposedFileName
     {
         get => _proposedFileName;
-        private set => SetProperty(ref _proposedFileName, value);
+        set => SetManualProposedFileName(value);
     }
 
     public bool HasIssues
@@ -60,9 +67,27 @@ public sealed class FilePreviewItemViewModel : ObservableObject
             DirectoryPath: DirectoryPath);
     }
 
-    public void UpdateFromProposal(RenameProposal proposal)
+    public void SetManualProposedFileName(string? proposedFileName)
     {
-        ProposedFileName = proposal.ProposedFileName;
+        var normalized = string.IsNullOrWhiteSpace(proposedFileName)
+            ? OriginalFileName
+            : proposedFileName.Trim();
+
+        ManualOverrideActive = true;
+        SetProposedFileNameInternal(normalized);
+        HasIssues = false;
+        ErrorSummary = string.Empty;
+    }
+
+    public void UpdateFromProposal(RenameProposal proposal, bool preserveManualOverride = true)
+    {
+        if (preserveManualOverride && ManualOverrideActive)
+        {
+            return;
+        }
+
+        ManualOverrideActive = false;
+        SetProposedFileNameInternal(proposal.ProposedFileName);
         HasIssues = proposal.HasErrors;
         ErrorSummary = proposal.HasErrors
             ? string.Join("\n", proposal.Errors.Distinct())
@@ -71,8 +96,14 @@ public sealed class FilePreviewItemViewModel : ObservableObject
 
     public void ResetPreview()
     {
-        ProposedFileName = OriginalFileName;
+        ManualOverrideActive = false;
+        SetProposedFileNameInternal(OriginalFileName);
         HasIssues = false;
         ErrorSummary = string.Empty;
+    }
+
+    private void SetProposedFileNameInternal(string proposedFileName)
+    {
+        SetProperty(ref _proposedFileName, proposedFileName, nameof(ProposedFileName));
     }
 }
