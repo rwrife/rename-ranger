@@ -69,6 +69,18 @@ When enabled in Settings, `rename-ranger` can call a **local** small model to pr
 - The AI endpoint is **probed for reachability**; if unavailable, the app silently falls back to rule-based naming.
 - **Off by default.** No cloud services, no telemetry, no network required for core features.
 
+## Windows packaging & CI
+
+Packaging is automated in `.github/workflows/windows-package.yml` on `windows-latest`.
+
+- Portable self-contained build command:
+  - `dotnet publish src/RenameRanger.App/RenameRanger.App.csproj -c Release -p:PublishProfile=Properties/PublishProfiles/win-x64-portable.pubxml`
+  - CI zips the output as `rename-ranger-win-x64.zip`.
+- MSIX package command:
+  - `dotnet publish src/RenameRanger.App/RenameRanger.App.csproj -c Release -p:PublishProfile=Properties/PublishProfiles/win-x64-msix.pubxml`
+
+CI also runs `dotnet test` for `RenameRanger.Core.Tests` before packaging and uploads both portable + MSIX artifacts.
+
 ## Current status / milestones
 
 🚧 **Bootstrapping.** Docs and issue backlog are up; implementation is issue-by-issue.
